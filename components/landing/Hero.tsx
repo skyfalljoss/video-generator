@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, PlayCircle } from "lucide-react";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 export function Hero() {
   return (
@@ -27,10 +28,22 @@ export function Hero() {
         </p>
         
         <div className="mt-10 flex items-center justify-center gap-4">
-          <Button size="lg" className="h-12 rounded-full bg-white px-8 text-base font-semibold text-black hover:bg-zinc-200">
-            Start for Free
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button size="lg" className="h-12 rounded-full bg-white px-8 text-base font-semibold text-black hover:bg-zinc-200">
+                Start for Free
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/dashboard">
+              <Button size="lg" className="h-12 rounded-full bg-white px-8 text-base font-semibold text-black hover:bg-zinc-200">
+                Go to Dashboard
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </SignedIn>
           <Button size="lg" variant="outline" className="h-12 rounded-full border-white/10 bg-white/5 text-base font-semibold text-white backdrop-blur-sm hover:bg-white/10">
             <PlayCircle className="mr-2 h-4 w-4" />
             Watch Demo

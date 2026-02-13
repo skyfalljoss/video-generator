@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { VideoIcon } from "lucide-react";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export function Navbar() {
   return (
@@ -28,12 +29,24 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/login" className="hidden text-sm font-medium text-zinc-400 transition-colors hover:text-white sm:block">
-            Login
-          </Link>
-          <Button className="bg-white text-black hover:bg-zinc-200">
-            Get Started
-          </Button>
+          <SignedOut>
+            <Link href="/sign-in" className="hidden text-sm font-medium text-zinc-400 transition-colors hover:text-white sm:block">
+              Login
+            </Link>
+            <Link href="/sign-up">
+              <Button className="bg-white text-black hover:bg-zinc-200">
+                Get Started
+              </Button>
+            </Link>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/dashboard">
+              <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/10">
+                Dashboard
+              </Button>
+            </Link>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
         </div>
       </div>
     </nav>
