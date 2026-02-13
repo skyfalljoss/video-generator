@@ -42,14 +42,14 @@ export function Features() {
   ];
 
   return (
-    <section id="features" className="bg-black py-24 sm:py-32">
+    <section id="features" className="bg-white py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:text-center">
-          <h2 className="text-base font-semibold leading-7 text-indigo-400">Deploy Faster</h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2 className="text-base font-semibold leading-7 text-indigo-600">Deploy Faster</h2>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
             Everything you need to scale your short-form content
           </p>
-          <p className="mt-6 text-lg leading-8 text-zinc-400">
+          <p className="mt-6 text-lg leading-8 text-zinc-600">
             Stop wasting hours editing. Our AI handles the entire workflow from idea to upload.
           </p>
         </div>
@@ -57,14 +57,14 @@ export function Features() {
         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
           <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
             {features.map((feature) => (
-              <div key={feature.title} className="flex flex-col rounded-2xl bg-zinc-900/50 p-8 ring-1 ring-white/10 transition-all hover:bg-zinc-900 hover:ring-indigo-500/50">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-white">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+              <div key={feature.title} className="flex flex-col rounded-2xl bg-zinc-50 p-8 ring-1 ring-zinc-200 transition-all hover:bg-white hover:shadow-lg hover:ring-indigo-600/20">
+                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-zinc-900">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-zinc-200 shadow-sm">
                     {feature.icon}
                   </div>
                   {feature.title}
                 </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-zinc-400">
+                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-zinc-600">
                   <p className="flex-auto">{feature.description}</p>
                 </dd>
               </div>
