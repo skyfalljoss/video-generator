@@ -1,4 +1,5 @@
--- Create a table for public profiles if it doesn't represent
+
+-- Users table setup (safely handle existing objects)
 create table if not exists users (
   id text primary key not null,
   email text,
@@ -7,13 +8,81 @@ create table if not exists users (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- If table exists but columns are missing (run this anyway, harmless if columns exist)
-alter table users add column if not exists full_name text;
-alter table users add column if not exists image_url text;
+-- Safely add columns
+do $$ 
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'users' and column_name = 'full_name') then
+    alter table users add column full_name text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name = 'users' and column_name = 'image_url') then
+    alter table users add column image_url text;
+  end if;
+end $$;
 
 -- Enable RLS
 alter table users enable row level security;
 
--- Allow public read access (careful with this, adjust policies as needed)
-create policy "Public profiles are viewable by everyone." on users
-  for select using (true);
+-- Safely create policy for users
+do $$ 
+begin
+  if not exists (select 1 from pg_policies where tablename = 'users' and policyname = 'Public profiles are viewable by everyone.') then
+    create policy "Public profiles are viewable by everyone." on users for select using (true);
+  end if;
+end $$;
+
+-- SERIES GENERATION WIZARD DATA
+-- Drop the table first to handle schema updates cleanly during dev
+drop table if exists series_projects;
+
+create table series_projects (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null, -- Stores Clerk User ID as text
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  
+  -- Step 1: Format & Content
+  format text not null,
+  niche text,
+  custom_topic text,
+  custom_prompt text,
+  aspect_ratio text not null default '9:16',
+  
+  -- Step 2: Language & Voice
+  language text not null default 'en-US',
+  voice text,
+  
+  -- Step 3: Music
+  music text[] default '{}',
+  
+  -- Step 4: Style
+  video_style text,
+  caption_style text,
+  font_weight text default 'bold',
+  
+  -- Step 5: Details & Schedule
+  name text,
+  duration text,
+  platforms text[] default '{}',
+  publish_time text,
+  
+  -- Status
+  status text default 'pending',
+  error_message text
+);
+
+-- Enable RLS
+alter table series_projects enable row level security;
+
+-- Policies for Clerk Auth (using raw jwt claims)
+-- We check if the requesting user's ID (from the JWT 'sub' claim) matches the user_id column
+-- 'sub' claim in JWT typically holds the unauthorized user ID
+create policy "Users can view their own projects" 
+  on series_projects for select 
+  using ((auth.jwt() ->> 'sub') = user_id);
+
+create policy "Users can insert their own projects" 
+  on series_projects for insert 
+  with check ((auth.jwt() ->> 'sub') = user_id);
+
+create policy "Users can update their own projects" 
+  on series_projects for update 
+  using ((auth.jwt() ->> 'sub') = user_id);

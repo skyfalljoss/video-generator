@@ -27,7 +27,18 @@ export type WizardData = {
   publishTime: string
 }
 
-export function CreateSeriesWizard() {
+
+interface CreateSeriesWizardProps {
+    initialData?: Partial<WizardData>
+    mode?: 'create' | 'edit'
+    seriesId?: string
+}
+
+export function CreateSeriesWizard({ 
+    initialData, 
+    mode = 'create', 
+    seriesId 
+}: CreateSeriesWizardProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [wizardData, setWizardData] = useState<WizardData>({
     format: "niche",
@@ -44,12 +55,15 @@ export function CreateSeriesWizard() {
     name: "",
     duration: "",
     platforms: [],
-    publishTime: "00:00"
+    publishTime: "00:00",
+    ...initialData // Override with initial data
   })
 
 
   const router = useRouter()
   const totalSteps = 5
+
+  const [loading, setLoading] = useState(false)
 
   const updateWizardData = (data: Partial<WizardData>) => {
     setWizardData((prev) => ({ ...prev, ...data }))
@@ -57,10 +71,36 @@ export function CreateSeriesWizard() {
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, totalSteps))
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1))
-  const finish = () => {
-    // Submit logic would go here
-    console.log("Submitting:", wizardData)
-    router.push("/dashboard")
+
+  const finish = async () => {
+    try {
+        setLoading(true)
+        
+        const url = mode === 'edit' && seriesId 
+            ? `/api/series/${seriesId}` 
+            : "/api/series"
+            
+        const method = mode === 'edit' ? "PATCH" : "POST"
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(wizardData),
+        })
+
+        if (!response.ok) {
+            throw new Error(mode === 'edit' ? "Failed to update series" : "Failed to save series")
+        }
+        
+        // Success
+        router.push("/dashboard")
+        router.refresh()
+    } catch (error) {
+        console.error("Error saving series:", error)
+        // Optionally show toast here
+    } finally {
+        setLoading(false)
+    }
   }
 
   return (
@@ -126,6 +166,7 @@ export function CreateSeriesWizard() {
             updateData={updateWizardData} 
             onBack={prevStep} 
             onFinish={finish} 
+            loading={loading}
           />
         )}
       </div>
