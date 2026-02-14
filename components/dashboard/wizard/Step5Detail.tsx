@@ -10,6 +10,7 @@ interface Step5Props {
     updateData: (data: Partial<WizardData>) => void
     onBack: () => void
     onFinish: () => void
+    loading?: boolean
 }
 
 const Durations = [
@@ -26,7 +27,7 @@ const Platforms = [
     { id: "Email", name: "Email", icon: <Mail className="h-6 w-6" /> },
 ]
 
-export function Step5Detail({ data, updateData, onBack, onFinish }: Step5Props) {
+export function Step5Detail({ data, updateData, onBack, onFinish, loading }: Step5Props) {
     
     const togglePlatform = (platformId: string) => {
         const current = data.platforms || []
@@ -142,10 +143,10 @@ export function Step5Detail({ data, updateData, onBack, onFinish }: Step5Props) 
                 </Button>
                 <Button 
                     onClick={onFinish} 
-                    disabled={!isValid}
+                    disabled={!isValid || loading}
                     className="bg-indigo-600 px-8 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20"
                 >
-                    Schedule Series
+                    {loading ? "Scheduling..." : "Schedule Series"}
                 </Button>
             </div>
         </div>
