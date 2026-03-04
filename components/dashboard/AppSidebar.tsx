@@ -4,16 +4,11 @@
 import * as React from "react"
 import {
   CreditCard,
-  Film,
   HelpCircle,
-  Home,
-  LayoutGrid,
   Settings,
   Tv,
-  Users,
   Video,
   Plus,
-  LogOut,
   User
 } from "lucide-react"
 
@@ -26,12 +21,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useUser, SignOutButton } from "@clerk/nextjs"
+import { useUser } from "@clerk/nextjs"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -40,7 +34,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
 
   const navItems = [
-    { title: "Series", icon: Tv, url: "/dashboard/series" },
+    { title: "Series", icon: Tv, url: "/dashboard" },
     { title: "Video", icon: Video, url: "/dashboard/videos" },
     { title: "Guides", icon: HelpCircle, url: "/dashboard/guides" },
     { title: "Settings", icon: Settings, url: "/dashboard/settings" },

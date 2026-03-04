@@ -86,3 +86,40 @@ create policy "Users can insert their own projects"
 create policy "Users can update their own projects" 
   on series_projects for update 
   using ((auth.jwt() ->> 'sub') = user_id);
+
+-- VIDEO GENERATIONS DATA
+drop table if exists video_generations;
+
+create table video_generations (
+  id uuid primary key default gen_random_uuid(),
+  series_id uuid references series_projects(id) on delete cascade not null,
+  user_id text not null, -- Stores Clerk User ID as text for security checks
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  
+  -- The generated assets
+  title text,
+  script text,
+  audio_url text,
+  captions jsonb,
+  image_urls text[],
+  
+  -- Video compilation status
+  status text default 'processing', -- processing, completed, failed
+  final_video_url text,
+  error_message text
+);
+
+-- Enable RLS for video_generations
+alter table video_generations enable row level security;
+
+create policy "Users can view their own generated videos" 
+  on video_generations for select 
+  using ((auth.jwt() ->> 'sub') = user_id);
+
+create policy "Users can insert their own generated videos" 
+  on video_generations for insert 
+  with check ((auth.jwt() ->> 'sub') = user_id);
+
+create policy "Users can update their own generated videos" 
+  on video_generations for update 
+  using ((auth.jwt() ->> 'sub') = user_id);
