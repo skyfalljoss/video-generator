@@ -85,8 +85,24 @@ export function SeriesList({ initialSeries }: SeriesListProps) {
         }
     }
 
-    const handleGenerate = (id: string) => {
-        toast.success("Generation started for series " + id)
+    const handleGenerate = async (id: string) => {
+        try {
+            toast.info("Starting generation...")
+            const res = await fetch(`/api/series/${id}/generate`, {
+                method: "POST"
+            })
+
+            if (!res.ok) {
+                const error = await res.json()
+                throw new Error(error.error || "Failed to start generation")
+            }
+            
+            toast.success("Generation started!")
+            router.push("/dashboard/videos")
+        } catch (error: any) {
+            console.error("Generate failed", error)
+            toast.error(error.message || "Failed to start generation")
+        }
     }
 
     const handleViewVideo = (id: string) => {
