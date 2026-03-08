@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, Lightbulb, Copy, Sparkles } from "lucide-react";
+import { ChevronRight, Lightbulb, Sparkles } from "lucide-react";
+import { CopyButton } from "@/components/CopyButton";
 
 const tips = [
   {
@@ -97,17 +98,7 @@ const prompts = [
   },
 ];
 
-function CopyButton({ text }: { text: string }) {
-  return (
-    <button
-      onClick={() => navigator.clipboard.writeText(text)}
-      title="Copy prompt"
-      className="shrink-0 p-1.5 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
-    >
-      <Copy className="h-3.5 w-3.5" />
-    </button>
-  );
-}
+
 
 export default function ScriptTipsPage() {
   return (
