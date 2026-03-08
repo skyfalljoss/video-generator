@@ -9,7 +9,14 @@ export const runtime = "edge";
 const createAdminClient = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    return createClient(supabaseUrl, supabaseServiceKey);
+    return createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false },
+        global: {
+            fetch: (url, options) => {
+                return fetch(url, { ...options, cache: "no-store" });
+            }
+        }
+    });
 }
 
 export async function DELETE(

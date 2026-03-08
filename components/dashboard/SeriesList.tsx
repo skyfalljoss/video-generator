@@ -5,6 +5,7 @@ import { Series, SeriesCard } from "./SeriesCard"
 import { useState } from "react"
 import { toast } from "sonner" // Assuming sonner is installed as per package.json
 import { useRouter } from "next/navigation"
+import { PlanUpgradeDialog } from "./PlanUpgradeDialog"
 
 interface SeriesListProps {
     initialSeries: Series[]
@@ -13,6 +14,8 @@ interface SeriesListProps {
 export function SeriesList({ initialSeries }: SeriesListProps) {
     const [seriesList, setSeriesList] = useState<Series[]>(initialSeries)
     const router = useRouter()
+    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+    const [upgradeMessage, setUpgradeMessage] = useState("")
 
     const handleEdit = (id: string) => {
         router.push(`/dashboard/series/${id}/edit`)
@@ -92,6 +95,13 @@ export function SeriesList({ initialSeries }: SeriesListProps) {
                 method: "POST"
             })
 
+            if (res.status === 403) {
+                const error = await res.json()
+                setUpgradeMessage(error.error || "You have reached your video generation limits.")
+                setShowUpgradeDialog(true)
+                return
+            }
+
             if (!res.ok) {
                 const error = await res.json()
                 throw new Error(error.error || "Failed to start generation")
@@ -99,14 +109,14 @@ export function SeriesList({ initialSeries }: SeriesListProps) {
             
             toast.success("Generation started!")
             router.push("/dashboard/videos")
-        } catch (error: any) {
+        } catch (error) {
             console.error("Generate failed", error)
-            toast.error(error.message || "Failed to start generation")
+            toast.error(error instanceof Error ? error.message : "Failed to start generation")
         }
     }
 
     const handleViewVideo = (id: string) => {
-        toast.info(`View video ${id} (Coming soon)`)
+        router.push(`/dashboard/videos?series=${id}`)
     }
 
     if (seriesList.length === 0) {
@@ -119,6 +129,11 @@ export function SeriesList({ initialSeries }: SeriesListProps) {
 
     return (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <PlanUpgradeDialog 
+                isOpen={showUpgradeDialog} 
+                onOpenChange={setShowUpgradeDialog} 
+                description={upgradeMessage} 
+            />
             {seriesList.map((series) => (
                 <SeriesCard
                     key={series.id}

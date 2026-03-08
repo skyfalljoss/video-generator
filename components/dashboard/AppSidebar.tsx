@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import { useEffect, useState } from "react"
 import {
   CreditCard,
   HelpCircle,
@@ -25,13 +26,27 @@ import {
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useUser } from "@clerk/nextjs"
+import { useUser, useClerk } from "@clerk/nextjs"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useUser()
+  const { openUserProfile } = useClerk()
   const pathname = usePathname()
+
+  const [tier, setTier] = useState<string>("free")
+  const [tokens, setTokens] = useState<number>(0)
+  
+  useEffect(() => {
+    fetch("/api/user/tier")
+        .then(res => res.json())
+        .then(data => {
+            if (data.tier) setTier(data.tier)
+            if (typeof data.tokens === 'number') setTokens(data.tokens)
+        })
+        .catch(err => console.error("Failed to fetch tier", err))
+  }, [])
 
   const navItems = [
     { title: "Series", icon: Tv, url: "/dashboard" },
@@ -44,12 +59,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props} className="border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900 border-none">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2 px-2">
+        <Link href="/" className="flex items-center gap-2 px-2 hover:opacity-80 transition-opacity">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
             <Video className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold tracking-tight">V Gen</span>
-        </div>
+        </Link>
         <div className="mt-4">
           <Link href="/dashboard/create-series">
             <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
@@ -80,17 +95,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <div className="rounded-xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700">
+        <div 
+            onClick={() => openUserProfile()}
+            className="rounded-xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-800 dark:border-zinc-700 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+        >
             <div className="flex items-center gap-3 mb-3">
-              <Avatar className="h-9 w-9 border border-zinc-200">
+              <Avatar className="h-9 w-9 border border-zinc-200 cursor-pointer">
                 <AvatarImage src={user?.imageUrl} alt={user?.fullName || "User"} />
                 <AvatarFallback>
                   <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 overflow-hidden">
-                <p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
-                  {user?.fullName || "User"}
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-white capitalize">
+                  {user?.fullName || "User"} • {tier}
                 </p>
                 <p className="truncate text-xs text-zinc-500">
                   {user?.primaryEmailAddress?.emailAddress}
@@ -100,10 +118,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    <span>Credits Used</span>
-                    <span>75%</span>
+                    <span>
+                        {tier === 'free' ? 'Daily Tokens' : 'Generation Tokens'}
+                    </span>
+                    <span>
+                        {tier === 'free' ? `${tokens}/5` : 'Unlimited'}
+                    </span>
                 </div>
-                <Progress value={75} className="h-1.5 bg-zinc-100 dark:bg-zinc-700" />
+                <Progress 
+                    value={tier === 'free' ? (tokens / 5) * 100 : 100} 
+                    className="h-1.5 bg-zinc-100 dark:bg-zinc-700" 
+                />
             </div>
         </div>
       </SidebarFooter>

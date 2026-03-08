@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Clock, PlayCircle } from "lucide-react";
+import { Clock, PlayCircle, Download } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 
 export interface VideoGeneration {
     id: string;
@@ -14,6 +16,8 @@ export interface VideoGeneration {
     final_video_url: string | null;
     error_message: string | null;
     series_projects?: {
+        id: string;
+        name: string | null;
         format: string;
         niche: string | null;
         custom_topic: string | null;
@@ -64,14 +68,32 @@ export function VideoCard({ video, onDelete }: { video: VideoGeneration, onDelet
                 )}
                 
                 {/* Play overlay on hover (only if finished) */}
-                {!isProcessing && !isFailed && (
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <PlayCircle className="w-12 h-12 text-white" />
-                    </div>
+                {!isProcessing && !isFailed && video.final_video_url && (
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-30">
+                                <PlayCircle className="w-12 h-12 text-white drop-shadow-lg" />
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-black border-zinc-800">
+                            <DialogHeader className="absolute top-0 z-50 w-full p-4 bg-gradient-to-b from-black/80 to-transparent">
+                                <DialogTitle className="text-white drop-shadow-md pr-8">{video.title || "Generated Video"}</DialogTitle>
+                            </DialogHeader>
+                            <div className="relative w-full aspect-[9/16] max-h-[80vh] bg-black mt-0 flex items-center justify-center">
+                                <video 
+                                    src={video.final_video_url} 
+                                    controls 
+                                    autoPlay 
+                                    className="w-full h-full object-contain"
+                                    controlsList="nodownload"
+                                />
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 )}
                 
-                {/* Status Badge */}
-                <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-20">
+                {/* Status Badge & Top Actions */}
+                <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-40">
                     <Badge variant="secondary" className={`shadow-sm backdrop-blur-md w-fit ${
                         isProcessing ? 'bg-amber-100/90 text-amber-700 dark:bg-amber-900/60 dark:text-amber-400' : 
                         isFailed ? 'bg-red-100/90 text-red-700 dark:bg-red-900/60 dark:text-red-400' :
@@ -80,25 +102,43 @@ export function VideoCard({ video, onDelete }: { video: VideoGeneration, onDelet
                         {isProcessing ? "Processing" : isFailed ? "Failed" : "Completed"}
                     </Badge>
                     
+                    {!isProcessing && !isFailed && video.final_video_url && (
+                        <a 
+                            href={video.final_video_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            download
+                            className="p-1.5 rounded-full bg-black/40 hover:bg-indigo-600 text-white backdrop-blur transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                            title="Download Video"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                        </a>
+                    )}
+                </div>
+
+                {/* Bottom Badges & Actions */}
+                <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end z-40">
                     {onDelete && (
                         <button 
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(video.id); }}
                             className="p-1.5 rounded-full bg-black/40 hover:bg-red-500/80 text-white backdrop-blur transition-colors opacity-0 group-hover:opacity-100"
+                            title="Delete Video"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                         </button>
                     )}
-                </div>
-
-                {/* Duration Badge Bottom Right */}
-                <div className="absolute bottom-2 right-2 z-20">
-                    <div className="px-2 py-1 rounded bg-black/70 backdrop-blur text-white text-[10px] font-semibold tracking-wide">
+                    <div className="px-2 py-1 rounded bg-black/70 backdrop-blur text-white text-[10px] font-semibold tracking-wide ml-auto">
                         {duration}
                     </div>
                 </div>
             </div>
 
             <CardHeader className="p-3 pb-1">
+                {video.series_projects?.name && (
+                    <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">
+                        {video.series_projects.name}
+                    </div>
+                )}
                 <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-tight">
                     {video.title || "Untitled Video"}
                 </h3>

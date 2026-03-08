@@ -33,29 +33,58 @@ const CaptionPreview = ({ style, isSelected }: { style: string, isSelected: bool
     // This is a simplified preview. In a real app, we'd use Framer Motion or CSS animations matching Remotion.
     // For now, we'll use Tailwind classes to approximate the look.
     
-    let animationClass = ""
+    let animationStyle: React.CSSProperties = {}
     switch (style) {
-        case "fade": animationClass = "animate-in fade-in duration-1000 repeat-infinite"; break;
-        case "pop": animationClass = "animate-in zoom-in-50 duration-500"; break;
-        case "scale": animationClass = "animate-in zoom-in-0 duration-1000"; break;
-        case "slide": animationClass = "animate-in slide-in-from-bottom duration-1000"; break;
-        // Typewriter and Karaoke are harder to do with just utility classes without custom keyframes or JS
-        // We will just use a generic pulse for now for those complex ones to indicate 'activity'
-        default: animationClass = "animate-pulse"; 
+        case "fade": animationStyle = { animation: "fade-preview 1.5s ease-in-out infinite alternate" }; break;
+        case "pop": animationStyle = { animation: "pop-preview 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite alternate" }; break;
+        case "scale": animationStyle = { animation: "scale-preview 1.5s ease-in-out infinite alternate" }; break;
+        case "slide": animationStyle = { animation: "slide-preview 1.5s ease-in-out infinite alternate" }; break;
+        case "typewriter": animationStyle = { 
+            overflow: "hidden", 
+            whiteSpace: "nowrap",
+            borderRight: "2px solid white",
+            animation: "typing-preview 2s steps(12, end) infinite" 
+        }; break;
+        case "karaoke": animationStyle = {
+             background: "linear-gradient(90deg, #fbbf24 50%, #ffffff 50%)",
+             backgroundSize: "200% 100%",
+             backgroundClip: "text",
+             WebkitBackgroundClip: "text",
+             color: "transparent",
+             animation: "karaoke-preview 2s linear infinite"
+        }; break;
+        default: animationStyle = {}; 
     }
 
     return (
-        <div className={`h-24 flex items-center justify-center rounded-md border-2 transition-all overflow-hidden relative ${
+        <div className={`h-24 flex items-center justify-center rounded-xl border-2 transition-all overflow-hidden relative group ${
             isSelected 
-            ? "border-indigo-600 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-950/20" 
-            : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
+            ? "border-indigo-600 ring-4 ring-indigo-500/20 shadow-xl scale-105 bg-indigo-50 dark:bg-indigo-950/20" 
+            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 hover:scale-105 hover:shadow-lg bg-zinc-100 dark:bg-zinc-900"
         }`}>
-            <span className={`text-lg font-bold text-zinc-900 dark:text-white ${animationClass}`}>
-                Preview Text
+            {/* Inject custom keyframes just for this component */}
+            <style jsx>{`
+                @keyframes fade-preview { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes pop-preview { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                @keyframes scale-preview { from { transform: scale(1); } to { transform: scale(1.15); } }
+                @keyframes slide-preview { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                @keyframes typing-preview { from { width: 0; } 50% { width: 100%; } 100% { width: 0; } }
+                @keyframes karaoke-preview { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+            `}</style>
+
+            <span 
+                className={`relative z-10 text-xl md:text-2xl font-black text-black dark:text-white px-2 uppercase tracking-wide inline-block`}
+                style={{
+                    fontFamily: "Arial, sans-serif",
+                    ...animationStyle
+                }}
+            >
+                Preview
             </span>
+            
             {isSelected && (
-                <div className="absolute top-2 right-2">
-                    <Check className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <div className="absolute top-2 right-2 bg-indigo-600 rounded-full p-1 shadow-md z-20">
+                    <Check className="h-3 w-3 text-white" />
                 </div>
             )}
         </div>
