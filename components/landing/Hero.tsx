@@ -18,10 +18,6 @@ export function Hero() {
       <div className="absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-indigo-600/5 blur-[100px]" />
 
       <div className="container relative z-10 mx-auto px-4 text-center pt-16 pb-24 min-h-screen flex flex-col items-center justify-center">
-        <div className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 mb-8 backdrop-blur-sm shadow-sm">
-          <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-          <span className="text-sm font-medium text-zinc-600">v2.0 is now live</span>
-        </div>
         
         <h1 className="mx-auto max-w-4xl bg-gradient-to-b from-zinc-900 to-zinc-600 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-7xl">
           Automate Your Content Empire with AI

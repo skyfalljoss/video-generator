@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Short Video Generator",
-  description: "Generate short videos from text",
+  title: "V Gen — AI Short Video Generator",
+  description: "Generate, edit, and schedule viral shorts for YouTube, TikTok, and Instagram with AI.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

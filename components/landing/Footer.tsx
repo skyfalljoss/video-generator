@@ -14,17 +14,13 @@ export function Footer() {
               <span className="text-xl font-bold text-zinc-900">V Gen</span>
             </Link>
             <p className="text-sm leading-6 text-zinc-600">
-              The #1 AI-powered video generator for content creators.
+              The AI-powered video generator for content creators.
               Scale your social media presence with automation.
             </p>
             <div className="flex space-x-6">
               <Link href="#" className="text-zinc-400 hover:text-indigo-600">
                 <span className="sr-only">Twitter</span>
                 <Twitter className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-zinc-400 hover:text-indigo-600">
-                <span className="sr-only">Instagram</span>
-                <Instagram className="h-5 w-5" />
               </Link>
               <Link href="#" className="text-zinc-400 hover:text-indigo-600">
                 <span className="sr-only">LinkedIn</span>
@@ -57,8 +53,8 @@ export function Footer() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Dashboard Preview
+                    <Link href="#hero" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                      Dashboard
                     </Link>
                   </li>
                 </ul>
