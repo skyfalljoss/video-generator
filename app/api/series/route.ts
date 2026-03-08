@@ -12,6 +12,8 @@ const createAdminClient = () => {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
+import { checkSeriesLimit, PLAN_LIMITS } from "@/lib/subscription";
+
 export async function POST(req: Request) {
     try {
         const { userId } = await auth();
@@ -33,6 +35,20 @@ export async function POST(req: Request) {
                 { status: 400 }
             );
         }
+
+        // --- ENFORCE LIMITS ---
+        const limitCheck = await checkSeriesLimit(userId);
+        
+        if (!limitCheck.canCreate) {
+            const planName = limitCheck.tier || "free";
+            const maxSeries = PLAN_LIMITS[planName as keyof typeof PLAN_LIMITS]?.series || 1;
+            
+            return NextResponse.json(
+                { error: `You have reached the maximum of ${maxSeries} series for the ${planName} plan. Please upgrade to create more.` },
+                { status: 403 }
+            );
+        }
+        // ----------------------
 
         const { error } = await supabase.from("series_projects").insert({
             user_id: userId,

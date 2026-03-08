@@ -36,6 +36,18 @@ const MusicTracks = [
         title: "MFCC Background",
         url: "https://ik.imagekit.io/0fkflxaif/bgMusic/mfcc-background-music-484362.mp3",
         duration: "2:10"
+    },
+    {
+        id: "no-sleep",
+        title: "No Sleep",
+        url: "https://ik.imagekit.io/0fkflxaif/bgMusic/kontraa-no-sleep-hiphop-music-473847.mp3",
+        duration: "2:46"
+    },
+    {
+        id: "nature",
+        title: "Nature",
+        url: "https://ik.imagekit.io/0fkflxaif/bgMusic/vkroxstarsinger-nature-music-vkroxstarsinger-226067.mp3",
+        duration: "2:00"
     }
 ]
 

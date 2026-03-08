@@ -10,11 +10,32 @@ export const helloWorld = inngest.createFunction(
   },
 );
 
+const MusicTracks = [
+    { id: "mountain", url: "https://ik.imagekit.io/0fkflxaif/bgMusic/the_mountain-background-music-159125.mp3" },
+    { id: "lofi-jazz", url: "https://ik.imagekit.io/0fkflxaif/bgMusic/sonican-lo-fi-music-loop-sentimental-jazzy-love-473154.mp3" },
+    { id: "nastelbom", url: "https://ik.imagekit.io/0fkflxaif/bgMusic/nastelbom-background-music-463062.mp3" },
+    { id: "mfcc", url: "https://ik.imagekit.io/0fkflxaif/bgMusic/mfcc-background-music-484362.mp3" },
+    { id: "no-sleep", url: "https://ik.imagekit.io/0fkflxaif/bgMusic/kontraa-no-sleep-hiphop-music-473847.mp3" },
+    { id: "nature", url: "https://ik.imagekit.io/0fkflxaif/bgMusic/vkroxstarsinger-nature-music-vkroxstarsinger-226067.mp3" }
+];
+
+const getMusicTrackUrl = (id: string) => {
+    const track = MusicTracks.find(t => t.id === id);
+    return track ? track.url : undefined;
+};
+
 // Admin client for background jobs bypassing RLS
 const createAdminClient = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    return createClient(supabaseUrl, supabaseServiceKey);
+    return createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false },
+        global: {
+            fetch: (url, options) => {
+                return fetch(url, { ...options, cache: "no-store" });
+            }
+        }
+    });
 }
 
 export const generateVideo = inngest.createFunction(
@@ -346,7 +367,92 @@ export const generateVideo = inngest.createFunction(
         return imageUrls;
     });
 
-    // 6. Save everything to database (Finalize)
+    // 6. Render Video via Remotion Lambda
+    const videoResult = await step.run("render-video", async () => {
+        // Only run if AWS keys are present, otherwise return null
+        if (!process.env.REMOTION_AWS_ACCESS_KEY_ID || !process.env.REMOTION_AWS_SECRET_ACCESS_KEY) {
+            console.warn("Missing AWS credentials for Remotion. Skipping video render.");
+            return null;
+        }
+
+        const { renderMediaOnLambda, getRenderProgress } = await import("@remotion/lambda/client");
+
+        // The serveUrl must match the one deployed via CLI
+        type AwsRegion = Parameters<typeof renderMediaOnLambda>[0]["region"];
+        const region = (process.env.REMOTION_AWS_REGION || "us-east-1") as AwsRegion;
+        const serveUrl = process.env.REMOTION_SITE_NAME || "short-video-generator";
+        
+        // AWS function name must match the one deployed with --timeout=900
+        const functionName = process.env.REMOTION_FUNCTION_NAME || "remotion-render-4-0-434-mem2048mb-disk2048mb-900sec";
+
+        try {
+            const { renderId, bucketName } = await renderMediaOnLambda({
+                region,
+                functionName,
+                serveUrl,
+                composition: "MainVideo",
+                inputProps: {
+                    audioUrl: audio.audioUrl,
+                    captions: captionsResult,
+                    imageUrls: images,
+                    // The DB stores an array of track IDs. For simplicity, we use the first selected track.
+                    bgAudioUrl: series.music && series.music.length > 0 
+                        ? getMusicTrackUrl(series.music[0]) 
+                        : undefined,
+                    captionStyle: series.caption_style || "fade"
+                },
+                codec: "h264",
+                imageFormat: "jpeg",
+                maxRetries: 0,
+                privacy: "public",
+                // Optimized for an AWS account with a concurrency limit of 1000.
+                // framesPerLambda: 30 means 1 second of video per Lambda worker.
+                // This splits the video across many Lambdas (e.g. 60 Lambdas for a 60s video).
+                // concurrencyPerLambda MUST be <= the number of CPU cores allocated to the Lambda.
+                // The current Lambda size (mem2048mb) provides roughly 2 CPU cores.
+                framesPerLambda: 30, 
+                concurrencyPerLambda: 2,
+            });
+
+            // Poll for progress
+            let progress;
+            while (true) {
+                await new Promise((resolve) => setTimeout(resolve, 3000));
+                progress = await getRenderProgress({
+                    renderId,
+                    bucketName,
+                    functionName,
+                    region,
+                });
+                
+                if (progress.done) {
+                    break;
+                }
+                if (progress.fatalErrorEncountered) {
+                    const errMessage = progress.errors.length > 0 ? progress.errors[0]?.message : "Unknown error rendering video";
+                    throw new Error(`Remotion Lambda error: ${errMessage}`);
+                }
+            }
+
+            const videoUrl = progress.outputFile as string;
+            
+            // Incremental save
+            if (event.data.videoId && videoUrl) {
+                 const supabase = createAdminClient();
+                 await supabase.from("video_generations").update({
+                     final_video_url: videoUrl
+                 }).eq("id", event.data.videoId);
+            }
+
+            return videoUrl;
+
+        } catch (error) {
+            console.error("Failed to render video on Lambda", error);
+            throw error;
+        }
+    });
+
+    // 7. Save everything to database (Finalize)
     const savedData = await step.run("save-generated-video", async () => {
         const supabase = createAdminClient();
         const { videoId } = event.data;
@@ -356,7 +462,8 @@ export const generateVideo = inngest.createFunction(
         if (videoId) {
             // Finalize the row to completed
             const { data, error } = await supabase.from("video_generations").update({
-                status: 'completed'
+                status: 'completed',
+                final_video_url: videoResult || undefined
             }).eq("id", videoId).select().single();
 
             if (error) throw new Error(`Failed to update video_generations: ${error.message}`);
@@ -371,7 +478,8 @@ export const generateVideo = inngest.createFunction(
                 audio_url: audio.audioUrl,
                 captions: captionsResult,
                 image_urls: images,
-                status: 'completed'
+                status: 'completed',
+                final_video_url: videoResult || undefined
             }).select().single();
 
             if (error) throw new Error(`Failed to insert video_generations: ${error.message}`);
@@ -390,11 +498,184 @@ export const generateVideo = inngest.createFunction(
         return videoRecord;
     });
 
+    // 8. Send Email notification
+    await step.run("send-email-notification", async () => {
+        try {
+            if (!videoResult || !images || images.length === 0) return { sent: false, reason: "No video or images" };
+            
+            const { createClerkClient } = await import("@clerk/nextjs/server");
+            const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+            const user = await clerkClient.users.getUser(series.user_id);
+            const userEmail = user.emailAddresses[0]?.emailAddress;
+
+            if (!userEmail) {
+                console.log("No user email found for user_id", series.user_id);
+                return { sent: false, reason: "No user email" };
+            }
+
+            const { render } = await import("@react-email/render");
+            const { VideoGeneratedEmail } = await import("../../components/emails/VideoGeneratedEmail");
+            const { Resend } = await import("resend");
+
+            const resendToken = process.env.RESEND_API_KEY;
+            if (!resendToken) {
+                 console.log("RESEND_API_KEY is missing, skipping email notification");
+                 return { sent: false, reason: "No Resend API key" };
+            }
+            const resend = new Resend(resendToken);
+
+            const thumbnailUrl = images[0] || "https://via.placeholder.com/300";
+            
+            const html = await render(VideoGeneratedEmail({
+                title: scriptResult.title,
+                videoUrl: videoResult,
+                thumbnailUrl: thumbnailUrl
+            }));
+
+            // If you don't have a verified domain, Resend only allows sending to the email 
+            // address that registered the Resend account from "onboarding@resend.dev".
+            const { data, error } = await resend.emails.send({
+                from: "onboarding@resend.dev",
+                to: userEmail,
+                subject: `Your video "${scriptResult.title}" is ready!`,
+                html: html,
+            });
+
+            if (error) {
+                 console.error("Resend API returned error:", error);
+                 return { sent: false, error: String(error) };
+            }
+
+            console.log("Sent Resend email to", userEmail);
+            return { sent: true, to: userEmail, id: data?.id };
+        } catch (err) {
+            console.error("Failed to send email notification", err);
+            // Don't throw here to avoid failing the whole background function 
+            // if everything else succeeded and just the email failed.
+            return { sent: false, error: String(err) };
+        }
+    });
+
+    // 9. Auto-Publish to YouTube
+    const youtubePublish = await step.run("publish-to-youtube", async () => {
+        try {
+            // Check if series is configured to publish to YouTube
+            const platforms = series.platforms || [];
+            const safePlatforms = platforms.map((p: string) => p.toLowerCase());
+            
+            if (!safePlatforms.includes("youtube")) {
+                return { skipped: true, reason: "YouTube not selected in series platforms" };
+            }
+
+            if (!videoResult) {
+                return { skipped: true, reason: "No video generated to publish" };
+            }
+
+            const supabase = createAdminClient();
+            
+            // Fetch YouTube credentials
+            const { data: connection, error: connError } = await supabase
+                .from("social_connections")
+                .select("*")
+                .eq("user_id", series.user_id)
+                .eq("platform", "youtube")
+                .single();
+
+            if (connError || !connection || !connection.access_token) {
+                console.log("No YouTube connection found for user", series.user_id);
+                return { skipped: true, reason: "No YouTube connection or tokens found" };
+            }
+
+            // Fetch the video file into a Buffer
+            const videoResponse = await fetch(videoResult);
+            if (!videoResponse.ok) {
+                throw new Error(`Failed to fetch final video for upload: ${videoResponse.statusText}`);
+            }
+            const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
+
+            const { google } = await import("googleapis");
+            const { Readable } = await import("stream");
+
+            const oauth2Client = new google.auth.OAuth2(
+                process.env.YOUTUBE_CLIENT_ID,
+                process.env.YOUTUBE_CLIENT_SECRET,
+                `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback`
+            );
+
+            oauth2Client.setCredentials({
+                access_token: connection.access_token,
+                refresh_token: connection.refresh_token,
+                expiry_date: connection.expires_at ? new Date(connection.expires_at).getTime() : undefined
+            });
+
+            // Explicitly verify or refresh the token before the large video upload request.
+            try {
+                const refreshed = await oauth2Client.getAccessToken();
+                if (refreshed?.token && refreshed.token !== connection.access_token) {
+                     console.log("YouTube token was refreshed for this session.");
+                     // Best practice: save the new access_token/expiry back to `social_connections`
+                     await supabase.from("social_connections").update({
+                         access_token: refreshed.token,
+                         // Note: We don't get the exact new expiry easily from getAccessToken, 
+                         // but oauth2Client tracks it internally for this request
+                         updated_at: new Date().toISOString()
+                     }).eq("id", connection.id);
+                }
+            } catch (authErr) {
+                console.error("Failed to verify/refresh YouTube access token:", authErr);
+                return { skipped: true, reason: "YouTube authentication expired, invalid, or requires re-login." };
+            }
+
+            const youtube = google.youtube({
+                version: "v3",
+                auth: oauth2Client
+            });
+
+            // Convert buffer to readable stream for googleapis
+            const readableVideo = new Readable();
+            readableVideo._read = () => {}; // _read is required but you can noop it
+            readableVideo.push(videoBuffer);
+            readableVideo.push(null);       // EOF
+
+            console.log("Starting YouTube upload...");
+
+            const desc = `Generated by AI Video Generator\n\n${series.niche}\n${scriptResult.script.substring(0, 200)}...`;
+
+            const res = await youtube.videos.insert({
+                part: ["snippet", "status"],
+                requestBody: {
+                    snippet: {
+                        title: scriptResult.title || "My AI Generated Short",
+                        description: desc,
+                        tags: ["ai", "shorts", series.niche.replace(/\s+/g, '')],
+                        categoryId: "22", // People & Blogs
+                    },
+                    status: {
+                        privacyStatus: "private", // Default to private for safety
+                        selfDeclaredMadeForKids: false,
+                    },
+                },
+                media: {
+                    mimeType: "video/mp4",
+                    body: readableVideo,
+                },
+            });
+
+            console.log("YouTube upload complete. Video ID:", res.data.id);
+            return { published: true, objectId: res.data.id, platform: "youtube", url: `https://youtube.com/shorts/${res.data.id}` };
+
+        } catch (error) {
+            console.error("Failed to publish to YouTube", error);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+            return { failed: true, error: errorMessage };
+        }
+    });
+
     return { 
         success: true, 
         seriesId,
         message: "Video generation workflow completed successfully.",
-        data: { series, script: scriptResult, audio, captions: captionsResult, images, savedData }
+        data: { series, script: scriptResult, audio, captions: captionsResult, images, videoUrl: videoResult, savedData, youtubePublish }
     };
   }
 );
