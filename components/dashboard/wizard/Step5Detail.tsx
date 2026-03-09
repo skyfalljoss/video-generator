@@ -1,9 +1,11 @@
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { WizardData } from "./CreateSeriesWizard"
-import { Youtube, Instagram, Music2, Clock, Mail, Facebook } from "lucide-react"
+import { Youtube, Instagram, Music2, Clock, Mail, Facebook, Lock } from "lucide-react"
+import { PlanUpgradeDialog } from "../PlanUpgradeDialog"
 
 interface Step5Props {
     data: WizardData
@@ -28,8 +30,29 @@ const Platforms = [
 ]
 
 export function Step5Detail({ data, updateData, onBack, onFinish, loading }: Step5Props) {
-    
+    const [tier, setTier] = useState<string>("free")
+    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+    const [upgradeMessage, setUpgradeMessage] = useState("")
+
+    useEffect(() => {
+        fetch("/api/user/tier")
+            .then(res => res.json())
+            .then(data => {
+                if (data.tier) setTier(data.tier)
+            })
+            .catch(err => console.error("Failed to fetch tier", err))
+    }, [])
+
     const togglePlatform = (platformId: string) => {
+        // Enforce premium plan restrictions
+        const isPremiumPlatform = ["TikTok", "Facebook", "Instagram"].includes(platformId)
+        
+        if (isPremiumPlatform && tier !== "unlimited") {
+            setUpgradeMessage(`Publishing to ${platformId} requires the Unlimited plan. Upgrade to unlock all social platforms.`)
+            setShowUpgradeDialog(true)
+            return
+        }
+
         const current = data.platforms || []
         if (current.includes(platformId)) {
             updateData({ platforms: current.filter(p => p !== platformId) })
@@ -42,6 +65,11 @@ export function Step5Detail({ data, updateData, onBack, onFinish, loading }: Ste
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PlanUpgradeDialog 
+                isOpen={showUpgradeDialog} 
+                onOpenChange={setShowUpgradeDialog} 
+                description={upgradeMessage} 
+            />
             <div className="space-y-6">
                 <div className="space-y-2">
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
@@ -95,20 +123,31 @@ export function Step5Detail({ data, updateData, onBack, onFinish, loading }: Ste
                     <div className="grid grid-cols-3 gap-4">
                         {Platforms.map((p) => {
                             const isSelected = data.platforms.includes(p.id)
+                            const isPremiumPlatform = ["TikTok", "Facebook", "Instagram"].includes(p.id)
+                            const isLocked = isPremiumPlatform && tier !== "unlimited"
+
                             return (
                                 <div 
                                     key={p.id}
                                     onClick={() => togglePlatform(p.id)}
                                     className={`
-                                        cursor-pointer flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all
+                                        cursor-pointer flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all relative
                                         ${isSelected 
                                             ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400" 
                                             : "border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
                                         }
+                                        ${isLocked ? "opacity-60" : ""}
                                     `}
                                 >
+                                    {isLocked && (
+                                        <div className="absolute top-2 right-2 text-zinc-400">
+                                            <Lock className="h-3 w-3" />
+                                        </div>
+                                    )}
                                     {p.icon}
-                                    <span className="text-xs font-medium text-center">{p.name}</span>
+                                    <span className="text-xs font-medium text-center flex items-center gap-1">
+                                        {p.name}
+                                    </span>
                                 </div>
                             )
                         })}

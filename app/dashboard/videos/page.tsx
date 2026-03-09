@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-import { VideoList, VideoGeneration } from "@/components/dashboard/VideoList";
+import { Suspense } from "react";
+import { VideoList } from "@/components/dashboard/VideoList";
 
 export const metadata = {
     title: "Generated Videos | V Gen",
@@ -30,8 +30,11 @@ export default async function VideosPage() {
             </div>
 
             <div className="mt-8">
-                <VideoList initialVideos={videos} />
+                <Suspense fallback={null}>
+                    <VideoList initialVideos={videos} />
+                </Suspense>
             </div>
         </div>
     );
 }
+

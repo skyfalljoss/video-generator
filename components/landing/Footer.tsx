@@ -11,20 +11,16 @@ export function Footer() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
                 <VideoIcon className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-zinc-900">ShortsGen AI</span>
+              <span className="text-xl font-bold text-zinc-900">V Gen</span>
             </Link>
             <p className="text-sm leading-6 text-zinc-600">
-              The #1 AI-powered video generator for content creators.
+              The AI-powered video generator for content creators.
               Scale your social media presence with automation.
             </p>
             <div className="flex space-x-6">
               <Link href="#" className="text-zinc-400 hover:text-indigo-600">
                 <span className="sr-only">Twitter</span>
                 <Twitter className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-zinc-400 hover:text-indigo-600">
-                <span className="sr-only">Instagram</span>
-                <Instagram className="h-5 w-5" />
               </Link>
               <Link href="#" className="text-zinc-400 hover:text-indigo-600">
                 <span className="sr-only">LinkedIn</span>
@@ -42,23 +38,23 @@ export function Footer() {
                 <h3 className="text-sm font-semibold leading-6 text-zinc-900">Product</h3>
                 <ul role="list" className="mt-6 space-y-4">
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                    <Link href="#features" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
                       Features
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                    <Link href="#pricing" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
                       Pricing
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Integrations
+                    <Link href="#demo" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                      Demo
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Changelog
+                    <Link href="#hero" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                      Dashboard
                     </Link>
                   </li>
                 </ul>
@@ -67,50 +63,23 @@ export function Footer() {
                 <h3 className="text-sm font-semibold leading-6 text-zinc-900">Resources</h3>
                 <ul role="list" className="mt-6 space-y-4">
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Documentation
+                    <Link href="#resources" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                      Getting Started
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      API Reference
+                    <Link href="#faq" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                      FAQ
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Blog
+                    <Link href={`https://www.youtube.com/watch?v=eRkh8-X097U`} target="_blank" rel="noopener noreferrer" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                      Video Tutorial
                     </Link>
                   </li>
                   <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
+                    <Link href="#resources" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
                       Community
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="md:grid md:grid-cols-2 md:gap-8">
-              <div>
-                <h3 className="text-sm font-semibold leading-6 text-zinc-900">Company</h3>
-                <ul role="list" className="mt-6 space-y-4">
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      About
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Careers
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Legal
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#" className="text-sm leading-6 text-zinc-600 hover:text-indigo-600">
-                      Contact
                     </Link>
                   </li>
                 </ul>
@@ -120,7 +89,7 @@ export function Footer() {
         </div>
         <div className="mt-16 border-t border-zinc-200 pt-8 sm:mt-20 lg:mt-24">
           <p className="text-xs leading-5 text-zinc-500">
-            &copy; 2024 ShortsGen AI Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} V Gen. All rights reserved.
           </p>
         </div>
       </div>

@@ -20,6 +20,8 @@ export async function getVideos(): Promise<VideoGeneration[]> {
         .select(`
             *,
             series_projects (
+                id,
+                name,
                 format,
                 niche,
                 custom_topic,

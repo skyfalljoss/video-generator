@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { inngest } from "@/lib/inngest/client";
 
+import { checkVideoGenerationLimit, consumeVideoToken } from "@/lib/subscription";
+
 export async function POST(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -25,11 +27,32 @@ export async function POST(
             );
         }
 
+        // --- ENFORCE LIMITS ---
+        const limitCheck = await checkVideoGenerationLimit(userId);
+        
+        if (!limitCheck.canGenerate) {
+            return NextResponse.json(
+                { error: "You have run out of video generation tokens for today on the Free plan. Please upgrade for unlimited generations." },
+                { status: 403 }
+            );
+        }
+        
+        // Deduct token (only decreases if not infinite)
+        await consumeVideoToken(userId);
+        // ----------------------
+
         // Insert initial processing row so it appears on the dashboard immediately
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
         const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { persistSession: false },
+            global: {
+                fetch: (url, options) => {
+                    return fetch(url, { ...options, cache: "no-store" });
+                }
+            }
+        });
 
         const { data: videoRow, error: insertError } = await supabase
             .from("video_generations")

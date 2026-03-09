@@ -8,6 +8,7 @@ import { Step3Music } from "./Step3Music"
 import { Step4Style } from "./Step4Style"
 import { Step5Detail } from "./Step5Detail"
 import { useRouter } from "next/navigation"
+import { PlanUpgradeDialog } from "../PlanUpgradeDialog"
 
 export type WizardData = {
   format: "niche" | "custom"
@@ -64,6 +65,8 @@ export function CreateSeriesWizard({
   const totalSteps = 5
 
   const [loading, setLoading] = useState(false)
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+  const [upgradeMessage, setUpgradeMessage] = useState("")
 
   const updateWizardData = (data: Partial<WizardData>) => {
     setWizardData((prev) => ({ ...prev, ...data }))
@@ -88,6 +91,13 @@ export function CreateSeriesWizard({
             body: JSON.stringify(wizardData),
         })
 
+        if (response.status === 403) {
+             const data = await response.json()
+             setUpgradeMessage(data.error || "You have reached your plan limits.")
+             setShowUpgradeDialog(true)
+             return // exit early
+        }
+
         if (!response.ok) {
             throw new Error(mode === 'edit' ? "Failed to update series" : "Failed to save series")
         }
@@ -105,6 +115,11 @@ export function CreateSeriesWizard({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <PlanUpgradeDialog 
+           isOpen={showUpgradeDialog} 
+           onOpenChange={setShowUpgradeDialog} 
+           description={upgradeMessage} 
+      />
       {/* Progress Indicator */}
       <div className="mb-10 flex gap-2">
         {Array.from({ length: totalSteps }).map((_, index) => {
