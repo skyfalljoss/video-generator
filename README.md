@@ -137,6 +137,10 @@ REPLICATE_API_TOKEN=your_replicate_api_token
 # Cloudflare Worker for fallback image generation
 CLOUDFLARE_WORKER_URL=your_worker_url
 CLOUDFLARE_WORKER_API_KEY=your_worker_api_key
+
+# Inngest (local dev — optional; npm run dev enables dev mode automatically)
+# INNGEST_DEV=1
+# Production: INNGEST_SIGNING_KEY=your_signing_key
 ```
 
 ### 6. Run Database Migrations (Optional)

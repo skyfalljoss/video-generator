@@ -109,6 +109,7 @@ export const generateVideo = inngest.createFunction(
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
+
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
