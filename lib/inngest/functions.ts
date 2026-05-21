@@ -2,11 +2,10 @@ import { inngest } from "./client";
 import { createClient } from "@supabase/supabase-js";
 
 export const helloWorld = inngest.createFunction(
-  { id: "hello-world" },
-  { event: "test/hello.world" },
+  { id: "hello-world", triggers: { event: "test/hello.world" } },
   async ({ event, step }) => {
     await step.sleep("wait-a-moment", "1s");
-    return { event, body: "Hello, World!" };
+    return { event, body: "Hello, World!"};
   },
 );
 
@@ -52,9 +51,9 @@ export const generateVideo = inngest.createFunction(
                 error_message: error.message
             }).eq("id", videoId);
         }
-    }
+    },
+    triggers: { event: "video/generate" },
   },
-  { event: "video/generate" },
   async ({ event, step }) => {
     const { seriesId } = event.data;
 
