@@ -2,8 +2,7 @@ import { inngest } from "./client";
 import { createClient } from "@supabase/supabase-js";
 
 export const helloWorld = inngest.createFunction(
-  { id: "hello-world" },
-  { event: "test/hello.world" },
+  { id: "hello-world", triggers: { event: "test/hello.world" } },
   async ({ event, step }) => {
     await step.sleep("wait-a-moment", "1s");
     return { event, body: "Hello, World!" };
@@ -42,6 +41,7 @@ export const generateVideo = inngest.createFunction(
   { 
     id: "generate-video",
     retries: 1, // Only retry once to avoid burning credits on persistent errors
+    triggers: { event: "video/generate" },
     onFailure: async ({ event, error }) => {
         const payload = event.data.event; // The original event is nested in event.data.event during onFailure
         const videoId = payload?.data?.videoId;
@@ -54,7 +54,6 @@ export const generateVideo = inngest.createFunction(
         }
     }
   },
-  { event: "video/generate" },
   async ({ event, step }) => {
     const { seriesId } = event.data;
 
