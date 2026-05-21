@@ -41,6 +41,7 @@ export const generateVideo = inngest.createFunction(
   { 
     id: "generate-video",
     retries: 1, // Only retry once to avoid burning credits on persistent errors
+    triggers: { event: "video/generate" },
     onFailure: async ({ event, error }) => {
         const payload = event.data.event; // The original event is nested in event.data.event during onFailure
         const videoId = payload?.data?.videoId;

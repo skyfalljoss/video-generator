@@ -90,8 +90,15 @@ export async function POST(
 
     } catch (error: unknown) {
         console.error("Generate API error:", error);
-         return NextResponse.json(
-            { error: "Internal Server Error" },
+        const message = error instanceof Error ? error.message : "";
+        const inngestMisconfigured =
+            /INNGEST_|event key|signing key|not sent to Inngest/i.test(message);
+        return NextResponse.json(
+            {
+                error: inngestMisconfigured
+                    ? "Background jobs are not running. For local dev: set INNGEST_DEV=1 in .env.local, restart Next.js, and run npm run dev:inngest in a second terminal."
+                    : "Internal Server Error",
+            },
             { status: 500 }
         );
     }
