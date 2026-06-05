@@ -1,0 +1,26 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Run everyday at 00:00 UTC (keeps the Supabase project active)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual triggering from the GitHub Actions tab
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/users?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          
+          echo "Response status code: $STATUS_CODE"
+          if [ "$STATUS_CODE" -eq 200 ]; then
+            echo "Successfully pinged Supabase!"
+          else
+            echo "Error: Received status code $STATUS_CODE"
+            exit 1
+          fi
