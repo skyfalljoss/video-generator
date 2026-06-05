@@ -12,18 +12,44 @@ jobs:
     steps:
       - name: Ping Supabase REST API
         run: |
+          # Retrieve secrets
+          URL="${{ secrets.SUPABASE_URL }}"
+          KEY="${{ secrets.SUPABASE_ANON_KEY }}"
+
           # Check if secrets are defined
-          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
             echo "::error::Missing required secrets! Please make sure SUPABASE_URL and SUPABASE_ANON_KEY are set in GitHub Repository Secrets."
+            exit 1
+          fi
+
+          # Trim leading/trailing whitespace (in case of copy-paste errors)
+          URL=$(echo "$URL" | xargs)
+          KEY=$(echo "$KEY" | xargs)
+
+          # Validate URL format
+          if [[ ! "$URL" =~ ^https:// ]]; then
+            echo "::error::SUPABASE_URL must start with 'https://'. Please check your repository secrets."
+            exit 1
+          fi
+
+          # Strip trailing slash from URL if present
+          URL="${URL%/}"
+
+          # Validate KEY format (should be a JWT: starts with eyJ and has exactly 2 dots)
+          DOTS_COUNT=$(echo -n "$KEY" | tr -cd '.' | wc -c)
+          if [[ ! "$KEY" =~ ^eyJ ]] || [ "$DOTS_COUNT" -ne 2 ]; then
+            echo "::error::SUPABASE_ANON_KEY does not appear to be a valid Supabase Anon JWT key."
+            echo "::error::It must start with 'eyJ' and contain exactly 2 dots (header.payload.signature format)."
+            echo "::error::Please verify that you copied the 'anon' 'public' API key from your Supabase dashboard (Project Settings > API)."
             exit 1
           fi
 
           # Perform the request and capture both the HTTP status code and any curl error
           RESPONSE_FILE=$(mktemp)
           STATUS_CODE=$(curl -i -s -w "%{http_code}" -o "$RESPONSE_FILE" \
-            -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/users?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" || echo "000")
+            -X GET "$URL/rest/v1/users?select=id&limit=1" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" || echo "000")
           
           echo "Response status code: $STATUS_CODE"
           
@@ -35,3 +61,4 @@ jobs:
             cat "$RESPONSE_FILE"
             exit 1
           fi
+
