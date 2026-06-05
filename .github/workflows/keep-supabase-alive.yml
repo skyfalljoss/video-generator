@@ -12,15 +12,26 @@ jobs:
     steps:
       - name: Ping Supabase REST API
         run: |
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          # Check if secrets are defined
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            echo "::error::Missing required secrets! Please make sure SUPABASE_URL and SUPABASE_ANON_KEY are set in GitHub Repository Secrets."
+            exit 1
+          fi
+
+          # Perform the request and capture both the HTTP status code and any curl error
+          RESPONSE_FILE=$(mktemp)
+          STATUS_CODE=$(curl -i -s -w "%{http_code}" -o "$RESPONSE_FILE" \
             -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/users?select=id&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" || echo "000")
           
           echo "Response status code: $STATUS_CODE"
+          
           if [ "$STATUS_CODE" -eq 200 ]; then
             echo "Successfully pinged Supabase!"
           else
-            echo "Error: Received status code $STATUS_CODE"
+            echo "::error::Ping failed with status code $STATUS_CODE"
+            echo "--- Response Headers / Output ---"
+            cat "$RESPONSE_FILE"
             exit 1
           fi
